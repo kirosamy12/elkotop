@@ -27,18 +27,7 @@ app.use('/api/user', userRoutes);
 app.get('/', (req, res) => {
   res.json({
     message: 'Welcome to Authentication API',
-    endpoints: {
-      signup: 'POST /api/auth/signup',
-      signin: 'POST /api/auth/signin',
-      forgotPassword: 'POST /api/auth/forgot-password',
-      verifyCode: 'POST /api/auth/verify-code',
-      resetPassword: 'POST /api/auth/reset-password',
-      profile: 'GET /api/user/profile (requires token)',
-      updateProfile: 'PUT /api/user/profile (requires token)',
-      uploadAvatar: 'POST /api/user/upload-avatar (requires token)',
-      getAllUsers: 'GET /api/user/all (admin only)',
-      deleteUser: 'DELETE /api/user/:id (admin only)'
-    }
+    
   });  
 });
 
