@@ -3,12 +3,24 @@ import multer from 'multer';
 // Configure multer to use memory storage
 const storage = multer.memoryStorage();
 
-// File filter to accept only images
+// File filter to accept images and PDFs
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
+  if (file.fieldname === 'avatar' || file.fieldname === 'coverImage') {
+    // Accept only images
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed for this field'), false);
+    }
+  } else if (file.fieldname === 'pdfFile') {
+    // Accept only PDFs
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed for this field'), false);
+    }
   } else {
-    cb(new Error('Only image files are allowed'), false);
+    cb(null, true);
   }
 };
 
@@ -17,7 +29,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 10 * 1024 * 1024 // 10MB limit for PDFs
   }
 });
 

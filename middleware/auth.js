@@ -46,3 +46,40 @@ export const authorize = (...roles) => {
     next();
   };
 };
+
+// Protect Admin routes
+export const protectAdmin = async (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: 'Not authorized to access this route'
+    });
+  }
+
+  try {
+    const Admin = (await import('../modules/admin/admin.model.js')).default;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await Admin.findById(decoded.id);
+    
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+
+    req.user.role = 'admin'; // Set role for consistency
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid token'
+    });
+  }
+};
