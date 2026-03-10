@@ -48,6 +48,58 @@ export const adminSignin = async (req, res) => {
   }
 };
 
+// Create New Admin (Admin Only)
+export const createAdmin = async (req, res) => {
+  try {
+    const { firstName, lastName, email, password } = req.body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
+
+    // Check if admin already exists
+    const adminExists = await Admin.findOne({ email });
+    if (adminExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin with this email already exists'
+      });
+    }
+
+    // Create admin
+    const admin = await Admin.create({
+      firstName,
+      lastName,
+      email,
+      password
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin created successfully',
+      data: {
+        id: admin._id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        email: admin.email,
+        avatar: admin.avatar,
+        role: 'admin',
+        createdAt: admin.createdAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create admin',
+      error: error.message
+    });
+  }
+};
+
 // Get Admin Profile
 export const getAdminProfile = async (req, res) => {
   try {
@@ -161,6 +213,61 @@ export const uploadAdminAvatar = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to upload avatar',
+      error: error.message
+    });
+  }
+};
+
+
+// Get All Admins (Admin Only)
+export const getAllAdmins = async (req, res) => {
+  try {
+    const admins = await Admin.find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: admins.length,
+      data: admins
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch admins',
+      error: error.message
+    });
+  }
+};
+
+// Delete Admin (Admin Only)
+export const deleteAdmin = async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.params.id);
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+
+    // Prevent deleting yourself
+    if (admin._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own account'
+      });
+    }
+
+    await admin.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete admin',
       error: error.message
     });
   }

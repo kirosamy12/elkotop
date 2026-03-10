@@ -76,7 +76,49 @@ POST /api/admin/signin
 
 ---
 
-## Step 3: Get Admin Profile
+## Step 4: Get All Admins
+
+### Endpoint
+```
+GET /api/admin/all
+```
+
+### Postman Setup:
+1. Method: `GET`
+2. URL: `http://localhost:5000/api/admin/all`
+3. Authorization:
+   - Type: `Bearer Token`
+   - Token: `[Your admin token]`
+
+### Response (200 OK):
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "_id": "65f1a2b3c4d5e6f7g8h9i0j1",
+      "firstName": "Admin",
+      "lastName": "User",
+      "email": "admin@example.com",
+      "avatar": "",
+      "createdAt": "2024-03-15T10:30:00.000Z"
+    },
+    {
+      "_id": "65f1a2b3c4d5e6f7g8h9i0j2",
+      "firstName": "John",
+      "lastName": "Admin",
+      "email": "john.admin@example.com",
+      "avatar": "",
+      "createdAt": "2024-03-15T11:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## Step 5: Get Admin Profile
 
 ### Endpoint
 ```
@@ -108,7 +150,7 @@ GET /api/admin/profile
 
 ---
 
-## Step 4: Update Admin Profile
+## Step 6: Update Admin Profile
 
 ### Endpoint
 ```
@@ -150,7 +192,7 @@ PUT /api/admin/profile
 
 ---
 
-## Step 5: Upload Admin Avatar
+## Step 7: Upload Admin Avatar
 
 ### Endpoint
 ```
@@ -181,7 +223,38 @@ POST /api/admin/upload-avatar
 
 ---
 
-## Step 6: Create Category (Admin Only)
+## Step 8: Delete Admin (Admin Only)
+
+### Endpoint
+```
+DELETE /api/admin/:id
+```
+
+### Example:
+```
+DELETE /api/admin/65f1a2b3c4d5e6f7g8h9i0j2
+```
+
+### Postman Setup:
+1. Method: `DELETE`
+2. URL: `http://localhost:5000/api/admin/65f1a2b3c4d5e6f7g8h9i0j2`
+3. Authorization:
+   - Type: `Bearer Token`
+   - Token: `[Your admin token]`
+
+### Response (200 OK):
+```json
+{
+  "success": true,
+  "message": "Admin deleted successfully"
+}
+```
+
+**Important:** You cannot delete your own admin account!
+
+---
+
+## Step 9: Create Category (Admin Only)
 
 ### Endpoint
 ```
@@ -221,7 +294,7 @@ POST /api/categories
 
 ---
 
-## Step 7: Create Book (Admin Only)
+## Step 10: Create Book (Admin Only)
 
 ### Endpoint
 ```
@@ -273,7 +346,7 @@ category:65f1a2b3c4d5e6f7g8h9i0j1
 
 ---
 
-## Step 8: Update Book (Admin Only)
+## Step 11: Update Book (Admin Only)
 
 ### Endpoint
 ```
@@ -302,7 +375,7 @@ description:An updated description
 
 ---
 
-## Step 9: Delete Book (Admin Only)
+## Step 12: Delete Book (Admin Only)
 
 ### Endpoint
 ```
@@ -331,7 +404,7 @@ DELETE /api/books/book123
 
 ---
 
-## Step 10: Update Category (Admin Only)
+## Step 13: Update Category (Admin Only)
 
 ### Endpoint
 ```
@@ -356,7 +429,7 @@ PUT /api/categories/:id
 
 ---
 
-## Step 11: Delete Category (Admin Only)
+## Step 14: Delete Category (Admin Only)
 
 ### Endpoint
 ```
@@ -525,9 +598,12 @@ Form Data:
 ### Admin Endpoints:
 ```
 POST   /api/admin/signin
-GET    /api/admin/profile
-PUT    /api/admin/profile
-POST   /api/admin/upload-avatar
+POST   /api/admin/create          (Admin only)
+GET    /api/admin/all             (Admin only)
+GET    /api/admin/profile         (Admin only)
+PUT    /api/admin/profile         (Admin only)
+POST   /api/admin/upload-avatar   (Admin only)
+DELETE /api/admin/:id             (Admin only)
 ```
 
 ### Category Management (Admin Only):
@@ -580,3 +656,83 @@ DELETE /api/books/:id
 - Use form-data, not JSON
 - Add both coverImage and pdfFile
 - Set type to "File" not "Text"
+
+
+---
+
+## Admin Management Examples
+
+### Create Multiple Admins:
+
+**Admin 1:**
+```json
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "email": "john@example.com",
+  "password": "secure123"
+}
+```
+
+**Admin 2:**
+```json
+{
+  "firstName": "Sarah",
+  "lastName": "Johnson",
+  "email": "sarah@example.com",
+  "password": "secure456"
+}
+```
+
+**Admin 3:**
+```json
+{
+  "firstName": "Mike",
+  "lastName": "Brown",
+  "email": "mike@example.com",
+  "password": "secure789"
+}
+```
+
+---
+
+## Security Notes
+
+1. **Only Admins Can Create Admins:**
+   - You must be signed in as admin
+   - Must have valid admin token
+   - Cannot create admin without authentication
+
+2. **Cannot Delete Yourself:**
+   - System prevents self-deletion
+   - Ensures at least one admin exists
+   - Must use another admin account to delete
+
+3. **Password Security:**
+   - Passwords are hashed with bcrypt
+   - Minimum 6 characters required
+   - Never stored in plain text
+
+4. **Email Uniqueness:**
+   - Each admin must have unique email
+   - System checks before creation
+   - Returns error if email exists
+
+---
+
+## Testing Scenarios
+
+### ✅ Valid Operations:
+1. Create first admin with script
+2. Sign in as admin
+3. Create additional admins
+4. View all admins
+5. Update own profile
+6. Delete other admins
+
+### ❌ Invalid Operations:
+1. Create admin without token → 401 Unauthorized
+2. Create admin with user token → 401 Unauthorized
+3. Create admin with duplicate email → 400 Bad Request
+4. Delete own account → 400 Bad Request
+5. Create admin with short password → 400 Bad Request
