@@ -7,129 +7,71 @@ export const adminSignin = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide email and password'
-      });
+      return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
-    const admin = await Admin.findOne({ email }).select('+password');
+    const admin = await Admin.findOne({ where: { email } });
 
     if (!admin || !(await admin.comparePassword(password))) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    const token = generateToken(admin._id);
+    const token = generateToken(admin.id);
 
     res.status(200).json({
       success: true,
       message: 'Admin signed in successfully',
       data: {
-        admin: {
-          id: admin._id,
-          firstName: admin.firstName,
-          lastName: admin.lastName,
-          email: admin.email,
-          avatar: admin.avatar,
-          role: 'admin'
-        },
+        admin: { id: admin.id, firstName: admin.firstName, lastName: admin.lastName, email: admin.email, avatar: admin.avatar, role: 'admin' },
         token
       }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Sign in failed',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Sign in failed', error: error.message });
   }
 };
 
-// Create New Admin (Admin Only)
+// Create New Admin
 export const createAdmin = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
-    // Validate required fields
     if (!firstName || !lastName || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
+      return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
-    // Check if admin already exists
-    const adminExists = await Admin.findOne({ email });
+    const adminExists = await Admin.findOne({ where: { email } });
     if (adminExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'Admin with this email already exists'
-      });
+      return res.status(400).json({ success: false, message: 'Admin with this email already exists' });
     }
 
-    // Create admin
-    const admin = await Admin.create({
-      firstName,
-      lastName,
-      email,
-      password
-    });
+    const admin = await Admin.create({ firstName, lastName, email, password });
 
     res.status(201).json({
       success: true,
       message: 'Admin created successfully',
-      data: {
-        id: admin._id,
-        firstName: admin.firstName,
-        lastName: admin.lastName,
-        email: admin.email,
-        avatar: admin.avatar,
-        role: 'admin',
-        createdAt: admin.createdAt
-      }
+      data: { id: admin.id, firstName: admin.firstName, lastName: admin.lastName, email: admin.email, avatar: admin.avatar, role: 'admin', createdAt: admin.createdAt }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create admin',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to create admin', error: error.message });
   }
 };
 
 // Get Admin Profile
 export const getAdminProfile = async (req, res) => {
   try {
-    const admin = await Admin.findById(req.user._id);
+    const admin = await Admin.findByPk(req.user.id);
 
     if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: 'Admin not found'
-      });
+      return res.status(404).json({ success: false, message: 'Admin not found' });
     }
 
     res.status(200).json({
       success: true,
-      data: {
-        id: admin._id,
-        firstName: admin.firstName,
-        lastName: admin.lastName,
-        email: admin.email,
-        avatar: admin.avatar,
-        role: 'admin',
-        createdAt: admin.createdAt
-      }
+      data: { id: admin.id, firstName: admin.firstName, lastName: admin.lastName, email: admin.email, avatar: admin.avatar, role: 'admin', createdAt: admin.createdAt }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch profile',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch profile', error: error.message });
   }
 };
 
@@ -137,31 +79,16 @@ export const getAdminProfile = async (req, res) => {
 export const updateAdminProfile = async (req, res) => {
   try {
     const { firstName, lastName } = req.body;
-
-    const admin = await Admin.findByIdAndUpdate(
-      req.user._id,
-      { firstName, lastName },
-      { new: true, runValidators: true }
-    );
+    const admin = await Admin.findByPk(req.user.id);
+    await admin.update({ firstName, lastName });
 
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: {
-        id: admin._id,
-        firstName: admin.firstName,
-        lastName: admin.lastName,
-        email: admin.email,
-        avatar: admin.avatar,
-        role: 'admin'
-      }
+      data: { id: admin.id, firstName: admin.firstName, lastName: admin.lastName, email: admin.email, avatar: admin.avatar, role: 'admin' }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update profile',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to update profile', error: error.message });
   }
 };
 
@@ -169,106 +96,58 @@ export const updateAdminProfile = async (req, res) => {
 export const uploadAdminAvatar = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please upload an image file'
-      });
+      return res.status(400).json({ success: false, message: 'Please upload an image file' });
     }
 
     const cloudinary = (await import('../../config/cloudinary.js')).default;
 
-    // Upload image to Cloudinary
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'admins/avatars',
-          transformation: [
-            { width: 500, height: 500, crop: 'fill' },
-            { quality: 'auto' }
-          ]
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
+        { folder: 'admins/avatars', transformation: [{ width: 500, height: 500, crop: 'fill' }, { quality: 'auto' }] },
+        (error, result) => { if (error) reject(error); else resolve(result); }
       );
       uploadStream.end(req.file.buffer);
     });
 
-    // Update admin avatar in database
-    const admin = await Admin.findByIdAndUpdate(
-      req.user._id,
-      { avatar: result.secure_url },
-      { new: true }
-    );
+    const admin = await Admin.findByPk(req.user.id);
+    await admin.update({ avatar: result.secure_url });
 
-    res.status(200).json({
-      success: true,
-      message: 'Avatar uploaded successfully',
-      data: {
-        avatar: admin.avatar
-      }
-    });
+    res.status(200).json({ success: true, message: 'Avatar uploaded successfully', data: { avatar: result.secure_url } });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to upload avatar',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to upload avatar', error: error.message });
   }
 };
 
-
-// Get All Admins (Admin Only)
+// Get All Admins
 export const getAllAdmins = async (req, res) => {
   try {
-    const admins = await Admin.find().sort({ createdAt: -1 });
+    const admins = await Admin.findAll({
+      attributes: { exclude: ['password', 'resetPasswordCode', 'resetPasswordExpire'] },
+      order: [['createdAt', 'DESC']]
+    });
 
-    res.status(200).json({
-      success: true,
-      count: admins.length,
-      data: admins
-    });
+    res.status(200).json({ success: true, count: admins.length, data: admins });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch admins',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch admins', error: error.message });
   }
 };
 
-// Delete Admin (Admin Only)
+// Delete Admin
 export const deleteAdmin = async (req, res) => {
   try {
-    const admin = await Admin.findById(req.params.id);
+    const admin = await Admin.findByPk(req.params.id);
 
     if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: 'Admin not found'
-      });
+      return res.status(404).json({ success: false, message: 'Admin not found' });
     }
 
-    // Prevent deleting yourself
-    if (admin._id.toString() === req.user._id.toString()) {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot delete your own account'
-      });
+    if (admin.id === req.user.id) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
     }
 
-    await admin.deleteOne();
-
-    res.status(200).json({
-      success: true,
-      message: 'Admin deleted successfully'
-    });
+    await admin.destroy();
+    res.status(200).json({ success: true, message: 'Admin deleted successfully' });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete admin',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to delete admin', error: error.message });
   }
 };

@@ -1,45 +1,48 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../../config/db.js';
+import Category from '../category/category.model.js';
 
-const bookSchema = new mongoose.Schema({
+const Book = sequelize.define('Book', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
   title: {
-    type: String,
-    required: [true, 'Book title is required'],
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   author: {
-    type: String,
-    required: [true, 'Author name is required'],
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   description: {
-    type: String,
-    required: [true, 'Description is required'],
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
   coverImage: {
-    type: String,
-    required: [true, 'Cover image is required']
+    type: DataTypes.STRING,
+    allowNull: false
   },
   pdfFile: {
-    type: String,
-    required: [true, 'PDF file is required']
+    type: DataTypes.STRING,
+    allowNull: false
   },
   releaseDate: {
-    type: Date,
-    required: [true, 'Release date is required']
+    type: DataTypes.DATEONLY,
+    allowNull: false
   },
-  category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-    required: [true, 'Category is required']
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  categoryId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: { model: Category, key: 'id' }
   }
+}, {
+  timestamps: true
 });
 
-// Index for search
-bookSchema.index({ title: 'text', author: 'text' });
+// Association
+Book.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
+Category.hasMany(Book, { foreignKey: 'categoryId', as: 'books' });
 
-export default mongoose.model('Book', bookSchema);
+export default Book;
