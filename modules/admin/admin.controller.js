@@ -151,3 +151,27 @@ export const deleteAdmin = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to delete admin', error: error.message });
   }
 };
+
+// Get All Users (Admin Only)
+export const getAllUsers = async (req, res) => {
+  try {
+    const User = (await import('../user/user.model.js')).default;
+
+    const users = await User.findAll({
+      attributes: { exclude: ['password', 'resetPasswordCode', 'resetPasswordExpire'] },
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
+  }
+};
