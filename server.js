@@ -7,6 +7,7 @@ import passwordRoutes from './modules/auth/password.routes.js';
 import userRoutes from './modules/user/user.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import categoryRoutes from './modules/category/category.routes.js';
+import authorRoutes from './modules/author/author.routes.js';
 import bookRoutes from './modules/book/book.routes.js';
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use('/api/auth', passwordRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/authors', authorRoutes);
 app.use('/api/books', bookRoutes);
  
 // Home route

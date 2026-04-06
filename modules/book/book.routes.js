@@ -16,7 +16,7 @@ const router = express.Router();
 // Public routes
 router.get('/', getAllBooks);
 router.get('/search', searchBooks);
-router.get('/author/:author', getBooksByAuthor);
+router.get('/author/:authorId', getBooksByAuthor);
 router.get('/:id', getBookById);
 
 // Admin only routes
