@@ -73,7 +73,7 @@ bio:American novelist and short story writer known for The Great Gatsby
 ```
 
 Add avatar manually (optional):
-- Key: `avatar`, Type: `File`
+- Key: `image`, Type: `File`
 
 **Response:**
 ```json

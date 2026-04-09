@@ -10,8 +10,8 @@ router.get('/', getAllAuthors);
 router.get('/:id', getAuthorById);
 
 // Admin only
-router.post('/', protectAdmin, upload.single('avatar'), createAuthor);
-router.put('/:id', protectAdmin, upload.single('avatar'), updateAuthor);
+router.post('/', protectAdmin, upload.single('image'), createAuthor);
+router.put('/:id', protectAdmin, upload.single('image'), updateAuthor);
 router.delete('/:id', protectAdmin, deleteAuthor);
 
 export default router;

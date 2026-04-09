@@ -55,7 +55,7 @@ export const createAuthor = async (req, res) => {
       avatarUrl = result.secure_url;
     }
 
-    const author = await Author.create({ name, bio, avatar: avatarUrl });
+    const author = await Author.create({ name, bio, image: avatarUrl });
 
     res.status(201).json({ success: true, message: 'Author created successfully', data: author });
   } catch (error) {
@@ -85,7 +85,7 @@ export const updateAuthor = async (req, res) => {
         );
         stream.end(req.file.buffer);
       });
-      updates.avatar = result.secure_url;
+      updates.image = result.secure_url;
     }
 
     await author.update(updates);

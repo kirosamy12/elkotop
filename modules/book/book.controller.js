@@ -7,7 +7,7 @@ import cloudinary from '../../config/cloudinary.js';
 const bookIncludes = {
   include: [
     { model: Category, as: 'category', attributes: ['id', 'title'] },
-    { model: Author, as: 'author', attributes: ['id', 'name', 'avatar'] }
+    { model: Author, as: 'author', attributes: ['id', 'name', 'image'] }
   ]
 };
 
@@ -90,7 +90,12 @@ export const createBook = async (req, res) => {
 
     const pdfResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: 'books/pdfs', resource_type: 'raw', format: 'pdf' },
+        { 
+          folder: 'books/pdfs',
+          resource_type: 'raw',
+          type: 'upload',
+          access_mode: 'public'
+        },
         (error, result) => { if (error) reject(error); else resolve(result); }
       );
       stream.end(req.files.pdfFile[0].buffer);
@@ -146,7 +151,12 @@ export const updateBook = async (req, res) => {
     if (req.files?.pdfFile) {
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: 'books/pdfs', resource_type: 'raw', format: 'pdf' },
+          { 
+            folder: 'books/pdfs',
+            resource_type: 'raw',
+            type: 'upload',
+            access_mode: 'public'
+          },
           (error, result) => { if (error) reject(error); else resolve(result); }
         );
         stream.end(req.files.pdfFile[0].buffer);

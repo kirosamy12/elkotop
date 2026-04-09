@@ -9,6 +9,7 @@ import adminRoutes from './modules/admin/admin.routes.js';
 import categoryRoutes from './modules/category/category.routes.js';
 import authorRoutes from './modules/author/author.routes.js';
 import bookRoutes from './modules/book/book.routes.js';
+import favoriteRoutes from './modules/favorite/favorite.routes.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/authors', authorRoutes);
 app.use('/api/books', bookRoutes);
+app.use('/api/favorites', favoriteRoutes);
  
 // Home route
 app.get('/', (req, res) => {
