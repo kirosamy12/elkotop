@@ -1,30 +1,25 @@
-import { Op } from 'sequelize';
 import Book from './book.model.js';
 import Category from '../category/category.model.js';
 import Author from '../author/author.model.js';
 import cloudinary from '../../config/cloudinary.js';
 
-const bookIncludes = {
-  include: [
-    { model: Category, as: 'category', attributes: ['id', 'title'] },
-    { model: Author, as: 'author', attributes: ['id', 'name', 'image'] }
-  ]
-};
+const populate = [
+  { path: 'category', select: 'id title' },
+  { path: 'author', select: 'id name image' }
+];
 
-// Get all books
 export const getAllBooks = async (req, res) => {
   try {
-    const books = await Book.findAll({ ...bookIncludes, order: [['createdAt', 'DESC']] });
+    const books = await Book.find().populate(populate).sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: books.length, data: books });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch books', error: error.message });
   }
 };
 
-// Get single book by ID
 export const getBookById = async (req, res) => {
   try {
-    const book = await Book.findByPk(req.params.id, bookIncludes);
+    const book = await Book.findById(req.params.id).populate(populate);
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
     res.status(200).json({ success: true, data: book });
   } catch (error) {
@@ -32,55 +27,46 @@ export const getBookById = async (req, res) => {
   }
 };
 
-// Get books by author ID
 export const getBooksByAuthor = async (req, res) => {
   try {
-    const author = await Author.findByPk(req.params.authorId);
+    const author = await Author.findById(req.params.authorId);
     if (!author) return res.status(404).json({ success: false, message: 'Author not found' });
 
-    const books = await Book.findAll({ where: { authorId: req.params.authorId }, ...bookIncludes });
+    const books = await Book.find({ author: req.params.authorId }).populate(populate);
     res.status(200).json({ success: true, count: books.length, data: books });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch books by author', error: error.message });
   }
 };
 
-// Search books
 export const searchBooks = async (req, res) => {
   try {
     const { query } = req.query;
     if (!query) return res.status(400).json({ success: false, message: 'Search query is required' });
 
-    const books = await Book.findAll({
-      where: { title: { [Op.like]: `%${query}%` } },
-      ...bookIncludes
-    });
+    const books = await Book.find({ title: { $regex: query, $options: 'i' } }).populate(populate);
     res.status(200).json({ success: true, count: books.length, data: books });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to search books', error: error.message });
   }
 };
 
-// Create book (Admin only)
 export const createBook = async (req, res) => {
   try {
-    const { title, description, releaseDate, categoryId, authorId } = req.body;
+    const { title, description, releaseDate, category, author } = req.body;
 
-    if (!title || !description || !releaseDate || !categoryId || !authorId) {
+    if (!title || !description || !releaseDate || !category || !author) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
-    const categoryExists = await Category.findByPk(categoryId);
-    if (!categoryExists) return res.status(404).json({ success: false, message: 'Category not found' });
-
-    const authorExists = await Author.findByPk(authorId);
-    if (!authorExists) return res.status(404).json({ success: false, message: 'Author not found' });
+    if (!await Category.findById(category)) return res.status(404).json({ success: false, message: 'Category not found' });
+    if (!await Author.findById(author)) return res.status(404).json({ success: false, message: 'Author not found' });
 
     if (!req.files?.coverImage || !req.files?.pdfFile) {
       return res.status(400).json({ success: false, message: 'Cover image and PDF file are required' });
     }
 
-    const coverImageResult = await new Promise((resolve, reject) => {
+    const coverResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: 'books/covers', transformation: [{ width: 800, height: 1200, crop: 'fill' }, { quality: 'auto' }] },
         (error, result) => { if (error) reject(error); else resolve(result); }
@@ -90,51 +76,42 @@ export const createBook = async (req, res) => {
 
     const pdfResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { 
-          folder: 'books/pdfs',
-          resource_type: 'raw',
-          type: 'upload',
-          access_mode: 'public'
-        },
+        { folder: 'books/pdfs', resource_type: 'raw', type: 'upload', access_mode: 'public' },
         (error, result) => { if (error) reject(error); else resolve(result); }
       );
       stream.end(req.files.pdfFile[0].buffer);
     });
 
     const book = await Book.create({
-      title, description, releaseDate, categoryId, authorId,
-      coverImage: coverImageResult.secure_url,
+      title, description, releaseDate, category, author,
+      coverImage: coverResult.secure_url,
       pdfFile: pdfResult.secure_url
     });
 
-    const populatedBook = await Book.findByPk(book.id, bookIncludes);
-    res.status(201).json({ success: true, message: 'Book created successfully', data: populatedBook });
+    const populated = await Book.findById(book._id).populate(populate);
+    res.status(201).json({ success: true, message: 'Book created successfully', data: populated });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to create book', error: error.message });
   }
 };
 
-// Update book (Admin only)
 export const updateBook = async (req, res) => {
   try {
-    const { title, description, releaseDate, categoryId, authorId } = req.body;
-    const book = await Book.findByPk(req.params.id);
-
+    const { title, description, releaseDate, category, author } = req.body;
+    const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
 
     const updates = {};
     if (title) updates.title = title;
     if (description) updates.description = description;
     if (releaseDate) updates.releaseDate = releaseDate;
-    if (categoryId) {
-      const cat = await Category.findByPk(categoryId);
-      if (!cat) return res.status(404).json({ success: false, message: 'Category not found' });
-      updates.categoryId = categoryId;
+    if (category) {
+      if (!await Category.findById(category)) return res.status(404).json({ success: false, message: 'Category not found' });
+      updates.category = category;
     }
-    if (authorId) {
-      const auth = await Author.findByPk(authorId);
-      if (!auth) return res.status(404).json({ success: false, message: 'Author not found' });
-      updates.authorId = authorId;
+    if (author) {
+      if (!await Author.findById(author)) return res.status(404).json({ success: false, message: 'Author not found' });
+      updates.author = author;
     }
 
     if (req.files?.coverImage) {
@@ -151,12 +128,7 @@ export const updateBook = async (req, res) => {
     if (req.files?.pdfFile) {
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { 
-            folder: 'books/pdfs',
-            resource_type: 'raw',
-            type: 'upload',
-            access_mode: 'public'
-          },
+          { folder: 'books/pdfs', resource_type: 'raw', type: 'upload', access_mode: 'public' },
           (error, result) => { if (error) reject(error); else resolve(result); }
         );
         stream.end(req.files.pdfFile[0].buffer);
@@ -164,20 +136,18 @@ export const updateBook = async (req, res) => {
       updates.pdfFile = result.secure_url;
     }
 
-    await book.update(updates);
-    const updatedBook = await Book.findByPk(book.id, bookIncludes);
-    res.status(200).json({ success: true, message: 'Book updated successfully', data: updatedBook });
+    const updated = await Book.findByIdAndUpdate(req.params.id, updates, { new: true }).populate(populate);
+    res.status(200).json({ success: true, message: 'Book updated successfully', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update book', error: error.message });
   }
 };
 
-// Delete book (Admin only)
 export const deleteBook = async (req, res) => {
   try {
-    const book = await Book.findByPk(req.params.id);
+    const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
-    await book.destroy();
+    await book.deleteOne();
     res.status(200).json({ success: true, message: 'Book deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete book', error: error.message });

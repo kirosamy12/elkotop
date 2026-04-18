@@ -1,16 +1,17 @@
 import dotenv from 'dotenv';
-import { connectDB } from '../config/db.js';
+import mongoose from 'mongoose';
 import Admin from '../modules/admin/admin.model.js';
 
 dotenv.config();
 
 const createAdmin = async () => {
   try {
-    await connectDB();
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB');
 
-    const existingAdmin = await Admin.findOne({ where: { email: 'admin@example.com' } });
-    if (existingAdmin) {
-      console.log('Admin already exists with email: admin@example.com');
+    const exists = await Admin.findOne({ email: 'admin@example.com' });
+    if (exists) {
+      console.log('Admin already exists: admin@example.com');
       process.exit(0);
     }
 
@@ -21,11 +22,9 @@ const createAdmin = async () => {
       password: 'admin123'
     });
 
-    console.log('✅ Admin created successfully!');
+    console.log('✅ Admin created!');
     console.log('Email:', admin.email);
     console.log('Password: admin123');
-    console.log('\nYou can now sign in at: POST /api/admin/signin');
-
     process.exit(0);
   } catch (error) {
     console.error('❌ Error:', error.message);
