@@ -53,7 +53,9 @@ export const searchBooks = async (req, res) => {
 
 export const createBook = async (req, res) => {
   try {
-    const { title, description, releaseDate, category, author } = req.body;
+    const { title, description, releaseDate, categoryId, authorId } = req.body;
+    const category = categoryId;
+    const author = authorId;
 
     if (!title || !description || !releaseDate || !category || !author) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
