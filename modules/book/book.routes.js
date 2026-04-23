@@ -6,7 +6,8 @@ import {
   searchBooks,
   createBook,
   updateBook,
-  deleteBook
+  deleteBook,
+  getRelatedBooks
 } from './book.controller.js';
 import { protectAdmin, authorize } from '../../middleware/auth.js';
 import upload from '../../middleware/upload.js';
@@ -17,6 +18,7 @@ const router = express.Router();
 router.get('/', getAllBooks);
 router.get('/search', searchBooks);
 router.get('/author/:authorId', getBooksByAuthor);
+router.get('/:id/related', getRelatedBooks);
 router.get('/:id', getBookById);
 
 // Admin only routes

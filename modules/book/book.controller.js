@@ -155,3 +155,20 @@ export const deleteBook = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to delete book', error: error.message });
   }
 };
+
+// Get related books (same category, exclude current book)
+export const getRelatedBooks = async (req, res) => {
+  try {
+    const book = await Book.findById(req.params.id);
+    if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
+
+    const related = await Book.find({
+      category: book.category,
+      _id: { $ne: book._id }
+    }).populate(populate).limit(6);
+
+    res.status(200).json({ success: true, count: related.length, data: related });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch related books', error: error.message });
+  }
+};
