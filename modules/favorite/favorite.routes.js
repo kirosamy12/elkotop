@@ -5,12 +5,12 @@ import { protect } from '../../middleware/auth.js';
 
 const router = express.Router();
 
-// Favorite Books
-router.get('/books', protect, getFavorites);
-router.post('/books/:bookId', protect, addFavorite);
-router.delete('/books/:bookId', protect, removeFavorite);
+// Favorite Books (original routes)
+router.get('/', protect, getFavorites);
+router.post('/:bookId', protect, addFavorite);
+router.delete('/:bookId', protect, removeFavorite);
 
-// Favorite Authors
+// Favorite Authors (new routes)
 router.get('/authors', protect, getFavoriteAuthors);
 router.post('/authors/:authorId', protect, addFavoriteAuthor);
 router.delete('/authors/:authorId', protect, removeFavoriteAuthor);
