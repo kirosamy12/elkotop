@@ -1,7 +1,8 @@
 import Book from './book.model.js';
 import Category from '../category/category.model.js';
 import Author from '../author/author.model.js';
-import cloudinary from '../../config/cloudinary.js';
+import { uploadToBunny } from '../../config/bunny.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const populate = [
   { path: 'category', select: 'id title' },
@@ -68,26 +69,21 @@ export const createBook = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cover image and PDF file are required' });
     }
 
-    const coverResult = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'books/covers', transformation: [{ width: 800, height: 1200, crop: 'fill' }, { quality: 'auto' }] },
-        (error, result) => { if (error) reject(error); else resolve(result); }
-      );
-      stream.end(req.files.coverImage[0].buffer);
-    });
+    const coverFile = req.files.coverImage[0];
+    const pdfFile = req.files.pdfFile[0];
 
-    const pdfResult = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'books/pdfs', resource_type: 'raw', type: 'upload', access_mode: 'public' },
-        (error, result) => { if (error) reject(error); else resolve(result); }
-      );
-      stream.end(req.files.pdfFile[0].buffer);
-    });
+    const coverName = `${uuidv4()}.${coverFile.originalname.split('.').pop()}`;
+    const pdfName = `${uuidv4()}.pdf`;
+
+    const [coverUrl, pdfUrl] = await Promise.all([
+      uploadToBunny(coverFile.buffer, coverName, 'books/covers'),
+      uploadToBunny(pdfFile.buffer, pdfName, 'books/pdfs')
+    ]);
 
     const book = await Book.create({
       title, description, releaseDate, category, author,
-      coverImage: coverResult.secure_url,
-      pdfFile: pdfResult.secure_url
+      coverImage: coverUrl,
+      pdfFile: pdfUrl
     });
 
     const populated = await Book.findById(book._id).populate(populate);
