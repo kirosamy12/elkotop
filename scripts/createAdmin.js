@@ -20,8 +20,8 @@ const createAdmin = async () => {
       lastName: 'User',
       email: 'admin@example.com',
       password: 'admin123'
-    });
-
+    }); 
+ 
     console.log('✅ Admin created!');
     console.log('Email:', admin.email);
     console.log('Password: admin123');

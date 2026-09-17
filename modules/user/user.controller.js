@@ -1,5 +1,6 @@
 import User from './user.model.js';
-import cloudinary from '../../config/cloudinary.js';
+import { uploadToBunny } from '../../config/bunny.js';
+import { randomUUID } from 'crypto';
 
 export const getProfile = async (req, res) => {
   try {
@@ -11,7 +12,7 @@ export const getProfile = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profile', error: error.message });
   }
-};
+};  
 
 export const updateProfile = async (req, res) => {
   try {
@@ -51,15 +52,11 @@ export const uploadAvatar = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'Please upload an image file' });
 
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'avatars', transformation: [{ width: 500, height: 500, crop: 'fill' }, { quality: 'auto' }] },
-        (error, result) => { if (error) reject(error); else resolve(result); }
-      );
-      stream.end(req.file.buffer);
-    });
+    const file = req.file;
+    const fileName = `${randomUUID()}.${file.originalname.split('.').pop()}`;
+    const avatarUrl = await uploadToBunny(file.buffer, fileName, 'avatars');
 
-    const user = await User.findByIdAndUpdate(req.user._id, { avatar: result.secure_url }, { new: true });
+    const user = await User.findByIdAndUpdate(req.user._id, { avatar: avatarUrl }, { new: true });
     res.status(200).json({ success: true, message: 'Avatar uploaded successfully', data: { avatar: user.avatar } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to upload avatar', error: error.message });

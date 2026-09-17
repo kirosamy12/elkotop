@@ -1,6 +1,7 @@
 import Author from './author.model.js';
 import Book from '../book/book.model.js';
-import cloudinary from '../../config/cloudinary.js';
+import { uploadToBunny } from '../../config/bunny.js';
+import { randomUUID } from 'crypto';
 
 export const getAllAuthors = async (req, res) => {
   try {
@@ -30,14 +31,8 @@ export const createAuthor = async (req, res) => {
 
     let imageUrl = '';
     if (req.file) {
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'authors', transformation: [{ width: 500, height: 500, crop: 'fill' }, { quality: 'auto' }] },
-          (error, result) => { if (error) reject(error); else resolve(result); }
-        );
-        stream.end(req.file.buffer);
-      });
-      imageUrl = result.secure_url;
+      const fileName = `${randomUUID()}.${req.file.originalname.split('.').pop()}`;
+      imageUrl = await uploadToBunny(req.file.buffer, fileName, 'authors');
     }
 
     const author = await Author.create({ name, bio, image: imageUrl });
@@ -58,14 +53,8 @@ export const updateAuthor = async (req, res) => {
     if (bio) updates.bio = bio;
 
     if (req.file) {
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'authors', transformation: [{ width: 500, height: 500, crop: 'fill' }, { quality: 'auto' }] },
-          (error, result) => { if (error) reject(error); else resolve(result); }
-        );
-        stream.end(req.file.buffer);
-      });
-      updates.image = result.secure_url;
+      const fileName = `${randomUUID()}.${req.file.originalname.split('.').pop()}`;
+      updates.image = await uploadToBunny(req.file.buffer, fileName, 'authors');
     }
 
     const updated = await Author.findByIdAndUpdate(req.params.id, updates, { new: true });

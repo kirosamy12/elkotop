@@ -2,7 +2,7 @@ import Book from './book.model.js';
 import Category from '../category/category.model.js';
 import Author from '../author/author.model.js';
 import { uploadToBunny } from '../../config/bunny.js';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 const populate = [
   { path: 'category', select: 'id title' },
@@ -72,8 +72,8 @@ export const createBook = async (req, res) => {
     const coverFile = req.files.coverImage[0];
     const pdfFile = req.files.pdfFile[0];
 
-    const coverName = `${uuidv4()}.${coverFile.originalname.split('.').pop()}`;
-    const pdfName = `${uuidv4()}.pdf`;
+    const coverName = `${randomUUID()}.${coverFile.originalname.split('.').pop()}`;
+    const pdfName = `${randomUUID()}.pdf`;
 
     const [coverUrl, pdfUrl] = await Promise.all([
       uploadToBunny(coverFile.buffer, coverName, 'books/covers'),
@@ -113,25 +113,15 @@ export const updateBook = async (req, res) => {
     }
 
     if (req.files?.coverImage) {
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'books/covers', transformation: [{ width: 800, height: 1200, crop: 'fill' }, { quality: 'auto' }] },
-          (error, result) => { if (error) reject(error); else resolve(result); }
-        );
-        stream.end(req.files.coverImage[0].buffer);
-      });
-      updates.coverImage = result.secure_url;
+      const coverFile = req.files.coverImage[0];
+      const coverName = `${randomUUID()}.${coverFile.originalname.split('.').pop()}`;
+      updates.coverImage = await uploadToBunny(coverFile.buffer, coverName, 'books/covers');
     }
 
     if (req.files?.pdfFile) {
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'books/pdfs', resource_type: 'raw', type: 'upload', access_mode: 'public' },
-          (error, result) => { if (error) reject(error); else resolve(result); }
-        );
-        stream.end(req.files.pdfFile[0].buffer);
-      });
-      updates.pdfFile = result.secure_url;
+      const pdfFile = req.files.pdfFile[0];
+      const pdfName = `${randomUUID()}.pdf`;
+      updates.pdfFile = await uploadToBunny(pdfFile.buffer, pdfName, 'books/pdfs');
     }
 
     const updated = await Book.findByIdAndUpdate(req.params.id, updates, { new: true }).populate(populate);
