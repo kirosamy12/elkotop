@@ -71,21 +71,13 @@ export const updateAdminProfile = async (req, res) => {
 
 export const uploadAdminAvatar = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ success: false, message: 'Please upload an image file' });
+    const { avatar } = req.body;
+    if (!avatar) return res.status(400).json({ success: false, message: 'Please provide avatar URL' });
 
-    const cloudinary = (await import('../../config/cloudinary.js')).default;
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'admins/avatars', transformation: [{ width: 500, height: 500, crop: 'fill' }, { quality: 'auto' }] },
-        (error, result) => { if (error) reject(error); else resolve(result); }
-      );
-      stream.end(req.file.buffer);
-    });
-
-    const admin = await Admin.findByIdAndUpdate(req.user._id, { avatar: result.secure_url }, { new: true });
-    res.status(200).json({ success: true, message: 'Avatar uploaded successfully', data: { avatar: admin.avatar } });
+    const admin = await Admin.findByIdAndUpdate(req.user._id, { avatar }, { new: true });
+    res.status(200).json({ success: true, message: 'Avatar updated successfully', data: { avatar: admin.avatar } });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to upload avatar', error: error.message });
+    res.status(500).json({ success: false, message: 'Failed to update avatar', error: error.message });
   }
 };
 

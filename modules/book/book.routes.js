@@ -9,8 +9,7 @@ import {
   deleteBook,
   getRelatedBooks
 } from './book.controller.js';
-import { protectAdmin, authorize } from '../../middleware/auth.js';
-import upload from '../../middleware/upload.js';
+import { protectAdmin } from '../../middleware/auth.js';
 
 const router = express.Router();
 
@@ -22,28 +21,8 @@ router.get('/:id/related', getRelatedBooks);
 router.get('/:id', getBookById);
 
 // Admin only routes
-router.post(
-  '/',
-  protectAdmin,
-  authorize('admin'),
-  upload.fields([
-    { name: 'coverImage', maxCount: 1 },
-    { name: 'pdfFile', maxCount: 1 }
-  ]),
-  createBook
-);
-
-router.put(
-  '/:id',
-  protectAdmin,
-  authorize('admin'),
-  upload.fields([
-    { name: 'coverImage', maxCount: 1 },
-    { name: 'pdfFile', maxCount: 1 }
-  ]),
-  updateBook
-);
-
-router.delete('/:id', protectAdmin, authorize('admin'), deleteBook);
+router.post('/', protectAdmin, createBook);
+router.put('/:id', protectAdmin, updateBook);
+router.delete('/:id', protectAdmin, deleteBook);
 
 export default router;

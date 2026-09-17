@@ -5,10 +5,12 @@ const BUNNY_STORAGE_ZONE = process.env.BUNNY_STORAGE_ZONE;
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
 const BUNNY_CDN_URL = process.env.BUNNY_CDN_URL;
 
+const BUNNY_STORAGE_URL = process.env.BUNNY_STORAGE_URL || 'https://storage.bunnycdn.com';
+
 // Upload file buffer to BunnyCDN
 export const uploadToBunny = async (fileBuffer, fileName, folder = '') => {
   const path = folder ? `${folder}/${fileName}` : fileName;
-  const url = `https://storage.bunnycdn.com/${BUNNY_STORAGE_ZONE}/${path}`;
+  const url = `${BUNNY_STORAGE_URL}/${BUNNY_STORAGE_ZONE}/${path}`;
 
   const response = await fetch(url, {
     method: 'PUT',

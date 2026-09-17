@@ -1,8 +1,6 @@
 import Book from './book.model.js';
 import Category from '../category/category.model.js';
 import Author from '../author/author.model.js';
-import { uploadToBunny } from '../../config/bunny.js';
-import { randomUUID } from 'crypto';
 
 const populate = [
   { path: 'category', select: 'id title' },
@@ -54,36 +52,23 @@ export const searchBooks = async (req, res) => {
 
 export const createBook = async (req, res) => {
   try {
-    const { title, description, releaseDate, categoryId, authorId } = req.body;
-    const category = categoryId;
-    const author = authorId;
+export const createBook = async (req, res) => {
+  try {
+    const { title, description, releaseDate, categoryId, authorId, coverImage, pdfFile } = req.body;
 
-    if (!title || !description || !releaseDate || !category || !author) {
+    if (!title || !description || !releaseDate || !categoryId || !authorId || !coverImage || !pdfFile) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
-    if (!await Category.findById(category)) return res.status(404).json({ success: false, message: 'Category not found' });
-    if (!await Author.findById(author)) return res.status(404).json({ success: false, message: 'Author not found' });
-
-    if (!req.files?.coverImage || !req.files?.pdfFile) {
-      return res.status(400).json({ success: false, message: 'Cover image and PDF file are required' });
-    }
-
-    const coverFile = req.files.coverImage[0];
-    const pdfFile = req.files.pdfFile[0];
-
-    const coverName = `${randomUUID()}.${coverFile.originalname.split('.').pop()}`;
-    const pdfName = `${randomUUID()}.pdf`;
-
-    const [coverUrl, pdfUrl] = await Promise.all([
-      uploadToBunny(coverFile.buffer, coverName, 'books/covers'),
-      uploadToBunny(pdfFile.buffer, pdfName, 'books/pdfs')
-    ]);
+    if (!await Category.findById(categoryId)) return res.status(404).json({ success: false, message: 'Category not found' });
+    if (!await Author.findById(authorId)) return res.status(404).json({ success: false, message: 'Author not found' });
 
     const book = await Book.create({
-      title, description, releaseDate, category, author,
-      coverImage: coverUrl,
-      pdfFile: pdfUrl
+      title, description, releaseDate,
+      category: categoryId,
+      author: authorId,
+      coverImage,
+      pdfFile
     });
 
     const populated = await Book.findById(book._id).populate(populate);
@@ -95,7 +80,7 @@ export const createBook = async (req, res) => {
 
 export const updateBook = async (req, res) => {
   try {
-    const { title, description, releaseDate, category, author } = req.body;
+    const { title, description, releaseDate, category, author, coverImage, pdfFile } = req.body;
     const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
 
@@ -103,6 +88,8 @@ export const updateBook = async (req, res) => {
     if (title) updates.title = title;
     if (description) updates.description = description;
     if (releaseDate) updates.releaseDate = releaseDate;
+    if (coverImage) updates.coverImage = coverImage;
+    if (pdfFile) updates.pdfFile = pdfFile;
     if (category) {
       if (!await Category.findById(category)) return res.status(404).json({ success: false, message: 'Category not found' });
       updates.category = category;
@@ -110,18 +97,6 @@ export const updateBook = async (req, res) => {
     if (author) {
       if (!await Author.findById(author)) return res.status(404).json({ success: false, message: 'Author not found' });
       updates.author = author;
-    }
-
-    if (req.files?.coverImage) {
-      const coverFile = req.files.coverImage[0];
-      const coverName = `${randomUUID()}.${coverFile.originalname.split('.').pop()}`;
-      updates.coverImage = await uploadToBunny(coverFile.buffer, coverName, 'books/covers');
-    }
-
-    if (req.files?.pdfFile) {
-      const pdfFile = req.files.pdfFile[0];
-      const pdfName = `${randomUUID()}.pdf`;
-      updates.pdfFile = await uploadToBunny(pdfFile.buffer, pdfName, 'books/pdfs');
     }
 
     const updated = await Book.findByIdAndUpdate(req.params.id, updates, { new: true }).populate(populate);
