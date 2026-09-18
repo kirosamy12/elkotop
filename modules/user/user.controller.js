@@ -1,25 +1,25 @@
-import User from './user.model.js';
+import prisma from '../../config/db.js';
 
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     res.status(200).json({
       success: true,
-      data: { id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email, avatar: user.avatar, role: user.role, createdAt: user.createdAt }
+      data: { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email, avatar: user.avatar, role: user.role, createdAt: user.createdAt }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profile', error: error.message });
   }
-};  
+};
 
 export const updateProfile = async (req, res) => {
   try {
     const { firstName, lastName } = req.body;
-    const user = await User.findByIdAndUpdate(req.user._id, { firstName, lastName }, { new: true });
+    const user = await prisma.user.update({ where: { id: req.user.id }, data: { firstName, lastName } });
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: { id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email, avatar: user.avatar, role: user.role }
+      data: { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email, avatar: user.avatar, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update profile', error: error.message });
@@ -28,7 +28,7 @@ export const updateProfile = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await prisma.user.findMany({ omit: { password: true, resetPasswordCode: true, resetPasswordExpire: true }, orderBy: { createdAt: 'desc' } });
     res.status(200).json({ success: true, count: users.length, data: users });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users', error: error.message });
@@ -37,9 +37,9 @@ export const getAllUsers = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await prisma.user.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    await user.deleteOne();
+    await prisma.user.delete({ where: { id: parseInt(req.params.id) } });
     res.status(200).json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete user', error: error.message });
@@ -50,8 +50,7 @@ export const uploadAvatar = async (req, res) => {
   try {
     const { avatar } = req.body;
     if (!avatar) return res.status(400).json({ success: false, message: 'Please provide avatar URL' });
-
-    const user = await User.findByIdAndUpdate(req.user._id, { avatar }, { new: true });
+    const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatar } });
     res.status(200).json({ success: true, message: 'Avatar updated successfully', data: { avatar: user.avatar } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update avatar', error: error.message });

@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  Int       @id @default(autoincrement())
+  firstName           String
+  lastName            String
+  email               String    @unique
+  password            String
+  avatar              String    @default("")
+  role                Role      @default(user)
+  resetPasswordCode   String?
+  resetPasswordExpire DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  favorites           Favorite[]
+  favoriteAuthors     FavoriteAuthor[]
+}
+
+model Admin {
+  id                  Int       @id @default(autoincrement())
+  firstName           String
+  lastName            String
+  email               String    @unique
+  password            String
+  avatar              String    @default("")
+  resetPasswordCode   String?
+  resetPasswordExpire DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  books     Book[]
+}
+
+model Author {
+  id        Int      @id @default(autoincrement())
+  name      String
+  bio       String?
+  image     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  books     Book[]
+  favoriteAuthors FavoriteAuthor[]
+}
+
+model Book {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  coverImage  String
+  pdfFile     String
+  releaseDate DateTime
+  categoryId  Int
+  authorId    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id])
+  author      Author   @relation(fields: [authorId], references: [id])
+  favorites   Favorite[]
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  bookId    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  book      Book     @relation(fields: [bookId], references: [id])
+
+  @@unique([userId, bookId])
+}
+
+model FavoriteAuthor {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  authorId  Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  author    Author   @relation(fields: [authorId], references: [id])
+
+  @@unique([userId, authorId])
+}
+
+enum Role {
+  user
+  admin
+}

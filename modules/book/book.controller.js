@@ -1,15 +1,15 @@
-import Book from './book.model.js';
-import Category from '../category/category.model.js';
-import Author from '../author/author.model.js';
+import prisma from '../../config/db.js';
 
-const populate = [
-  { path: 'category', select: 'id title' },
-  { path: 'author', select: 'id name image' }
-];
+const bookInclude = {
+  include: {
+    category: { select: { id: true, title: true } },
+    author: { select: { id: true, name: true, image: true } }
+  }
+};
 
 export const getAllBooks = async (req, res) => {
   try {
-    const books = await Book.find().populate(populate).sort({ createdAt: -1 });
+    const books = await prisma.book.findMany({ ...bookInclude, orderBy: { createdAt: 'desc' } });
     res.status(200).json({ success: true, count: books.length, data: books });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch books', error: error.message });
@@ -18,7 +18,7 @@ export const getAllBooks = async (req, res) => {
 
 export const getBookById = async (req, res) => {
   try {
-    const book = await Book.findById(req.params.id).populate(populate);
+    const book = await prisma.book.findUnique({ where: { id: parseInt(req.params.id) }, ...bookInclude });
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
     res.status(200).json({ success: true, data: book });
   } catch (error) {
@@ -28,10 +28,9 @@ export const getBookById = async (req, res) => {
 
 export const getBooksByAuthor = async (req, res) => {
   try {
-    const author = await Author.findById(req.params.authorId);
+    const author = await prisma.author.findUnique({ where: { id: parseInt(req.params.authorId) } });
     if (!author) return res.status(404).json({ success: false, message: 'Author not found' });
-
-    const books = await Book.find({ author: req.params.authorId }).populate(populate);
+    const books = await prisma.book.findMany({ where: { authorId: parseInt(req.params.authorId) }, ...bookInclude });
     res.status(200).json({ success: true, count: books.length, data: books });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch books by author', error: error.message });
@@ -42,8 +41,7 @@ export const searchBooks = async (req, res) => {
   try {
     const { query } = req.query;
     if (!query) return res.status(400).json({ success: false, message: 'Search query is required' });
-
-    const books = await Book.find({ title: { $regex: query, $options: 'i' } }).populate(populate);
+    const books = await prisma.book.findMany({ where: { title: { contains: query, mode: 'insensitive' } }, ...bookInclude });
     res.status(200).json({ success: true, count: books.length, data: books });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to search books', error: error.message });
@@ -52,27 +50,20 @@ export const searchBooks = async (req, res) => {
 
 export const createBook = async (req, res) => {
   try {
-export const createBook = async (req, res) => {
-  try {
     const { title, description, releaseDate, categoryId, authorId, coverImage, pdfFile } = req.body;
-
     if (!title || !description || !releaseDate || !categoryId || !authorId || !coverImage || !pdfFile) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
     }
+    const category = await prisma.category.findUnique({ where: { id: parseInt(categoryId) } });
+    if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
+    const author = await prisma.author.findUnique({ where: { id: parseInt(authorId) } });
+    if (!author) return res.status(404).json({ success: false, message: 'Author not found' });
 
-    if (!await Category.findById(categoryId)) return res.status(404).json({ success: false, message: 'Category not found' });
-    if (!await Author.findById(authorId)) return res.status(404).json({ success: false, message: 'Author not found' });
-
-    const book = await Book.create({
-      title, description, releaseDate,
-      category: categoryId,
-      author: authorId,
-      coverImage,
-      pdfFile
+    const book = await prisma.book.create({
+      data: { title, description, releaseDate: new Date(releaseDate), categoryId: parseInt(categoryId), authorId: parseInt(authorId), coverImage, pdfFile },
+      ...bookInclude
     });
-
-    const populated = await Book.findById(book._id).populate(populate);
-    res.status(201).json({ success: true, message: 'Book created successfully', data: populated });
+    res.status(201).json({ success: true, message: 'Book created successfully', data: book });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to create book', error: error.message });
   }
@@ -81,25 +72,25 @@ export const createBook = async (req, res) => {
 export const updateBook = async (req, res) => {
   try {
     const { title, description, releaseDate, category, author, coverImage, pdfFile } = req.body;
-    const book = await Book.findById(req.params.id);
+    const book = await prisma.book.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
 
-    const updates = {};
-    if (title) updates.title = title;
-    if (description) updates.description = description;
-    if (releaseDate) updates.releaseDate = releaseDate;
-    if (coverImage) updates.coverImage = coverImage;
-    if (pdfFile) updates.pdfFile = pdfFile;
+    const data = {};
+    if (title) data.title = title;
+    if (description) data.description = description;
+    if (releaseDate) data.releaseDate = new Date(releaseDate);
+    if (coverImage) data.coverImage = coverImage;
+    if (pdfFile) data.pdfFile = pdfFile;
     if (category) {
-      if (!await Category.findById(category)) return res.status(404).json({ success: false, message: 'Category not found' });
-      updates.category = category;
+      if (!await prisma.category.findUnique({ where: { id: parseInt(category) } })) return res.status(404).json({ success: false, message: 'Category not found' });
+      data.categoryId = parseInt(category);
     }
     if (author) {
-      if (!await Author.findById(author)) return res.status(404).json({ success: false, message: 'Author not found' });
-      updates.author = author;
+      if (!await prisma.author.findUnique({ where: { id: parseInt(author) } })) return res.status(404).json({ success: false, message: 'Author not found' });
+      data.authorId = parseInt(author);
     }
 
-    const updated = await Book.findByIdAndUpdate(req.params.id, updates, { new: true }).populate(populate);
+    const updated = await prisma.book.update({ where: { id: parseInt(req.params.id) }, data, ...bookInclude });
     res.status(200).json({ success: true, message: 'Book updated successfully', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update book', error: error.message });
@@ -108,26 +99,20 @@ export const updateBook = async (req, res) => {
 
 export const deleteBook = async (req, res) => {
   try {
-    const book = await Book.findById(req.params.id);
+    const book = await prisma.book.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
-    await book.deleteOne();
+    await prisma.book.delete({ where: { id: parseInt(req.params.id) } });
     res.status(200).json({ success: true, message: 'Book deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete book', error: error.message });
   }
 };
 
-// Get related books (same category, exclude current book)
 export const getRelatedBooks = async (req, res) => {
   try {
-    const book = await Book.findById(req.params.id);
+    const book = await prisma.book.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
-
-    const related = await Book.find({
-      category: book.category,
-      _id: { $ne: book._id }
-    }).populate(populate).limit(6);
-
+    const related = await prisma.book.findMany({ where: { categoryId: book.categoryId, NOT: { id: book.id } }, take: 6, ...bookInclude });
     res.status(200).json({ success: true, count: related.length, data: related });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch related books', error: error.message });
