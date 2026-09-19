@@ -10,11 +10,15 @@ export const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await prisma.user.findUnique({ where: { id: decoded.id }, omit: { password: true } });
+    req.user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, firstName: true, lastName: true, email: true, avatar: true, role: true }
+    });
     if (!req.user) return res.status(401).json({ success: false, message: 'User not found' });
     next();
   } catch (error) {
-    return res.status(401).json({ success: false, message: 'Invalid token' });
+    console.error('protect error:', error.message);
+    return res.status(401).json({ success: false, message: 'Invalid token', error: error.message });
   }
 };
 
@@ -36,11 +40,15 @@ export const protectAdmin = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const admin = await prisma.admin.findUnique({ where: { id: decoded.id }, omit: { password: true } });
+    const admin = await prisma.admin.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, firstName: true, lastName: true, email: true, avatar: true }
+    });
     if (!admin) return res.status(401).json({ success: false, message: 'Admin not found' });
     req.user = { ...admin, role: 'admin' };
     next();
   } catch (error) {
-    return res.status(401).json({ success: false, message: 'Invalid token' });
+    console.error('protectAdmin error:', error.message);
+    return res.status(401).json({ success: false, message: 'Invalid token', error: error.message });
   }
 };
