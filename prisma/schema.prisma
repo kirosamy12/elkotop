@@ -60,7 +60,7 @@ model Book {
   title       String
   description String
   coverImage  String
-  fileUrl   String
+  FileUrl   String
   releaseDate DateTime
   categoryId  Int
   authorId    Int
