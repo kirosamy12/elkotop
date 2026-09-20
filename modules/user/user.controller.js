@@ -28,7 +28,10 @@ export const updateProfile = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await prisma.user.findMany({ omit: { password: true, resetPasswordCode: true, resetPasswordExpire: true }, orderBy: { createdAt: 'desc' } });
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true, email: true, avatar: true, role: true, createdAt: true, updatedAt: true },
+      orderBy: { createdAt: 'desc' }
+    });
     res.status(200).json({ success: true, count: users.length, data: users });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users', error: error.message });
