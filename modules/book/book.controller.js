@@ -71,7 +71,7 @@ export const createBook = async (req, res) => {
     const coverImage = await uploadToBunny(req.file.buffer, coverName, 'books/covers');
 
     const book = await prisma.book.create({
-      data: { title, description, releaseDate: new Date(releaseDate), categoryId: parseInt(categoryId), authorId: parseInt(authorId), coverImage, pdfFile: fileUrl },
+      data: { title, description, releaseDate: new Date(releaseDate), categoryId: parseInt(categoryId), authorId: parseInt(authorId), coverImage, fileUrl },
       ...bookInclude
     });
     res.status(201).json({ success: true, message: 'Book created successfully', data: book });
@@ -94,7 +94,7 @@ export const updateBook = async (req, res) => {
       const coverName = `${randomUUID()}.${req.file.originalname.split('.').pop()}`;
       data.coverImage = await uploadToBunny(req.file.buffer, coverName, 'books/covers');
     }
-    if (fileUrl) data.pdfFile = fileUrl;
+    if (fileUrl) data.fileUrl = fileUrl;
     if (category) {
       if (!await prisma.category.findUnique({ where: { id: parseInt(category) } })) return res.status(404).json({ success: false, message: 'Category not found' });
       data.categoryId = parseInt(category);
