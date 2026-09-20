@@ -51,9 +51,13 @@ export const searchBooks = async (req, res) => {
 export const createBook = async (req, res) => {
   try {
     const { title, description, releaseDate, categoryId, authorId, coverImage, pdfFile } = req.body;
-    if (!title || !description || !releaseDate || !categoryId || !authorId || !coverImage || !pdfFile) {
-      return res.status(400).json({ success: false, message: 'All fields are required' });
-    }
+    if (!title) return res.status(400).json({ success: false, message: 'Title is required' });
+    if (!description) return res.status(400).json({ success: false, message: 'Description is required' });
+    if (!releaseDate) return res.status(400).json({ success: false, message: 'Release date is required' });
+    if (!categoryId) return res.status(400).json({ success: false, message: 'Category ID is required' });
+    if (!authorId) return res.status(400).json({ success: false, message: 'Author ID is required' });
+    if (!coverImage) return res.status(400).json({ success: false, message: 'Cover image URL is required' });
+    if (!pdfFile) return res.status(400).json({ success: false, message: 'PDF file URL is required' });
     const category = await prisma.category.findUnique({ where: { id: parseInt(categoryId) } });
     if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
     const author = await prisma.author.findUnique({ where: { id: parseInt(authorId) } });
