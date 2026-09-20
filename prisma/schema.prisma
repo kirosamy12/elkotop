@@ -60,7 +60,7 @@ model Book {
   title       String
   description String
   coverImage  String
-  pdfFile     String
+  pdfFile   String  @map("file_url")
   releaseDate DateTime
   categoryId  Int
   authorId    Int
