@@ -8,8 +8,8 @@ const upload = multer();
 
 router.get('/', getAllAuthors);
 router.get('/:id', getAuthorById);
-router.post('/', protectAdmin, upload.none(), createAuthor);
-router.put('/:id', protectAdmin, upload.none(), updateAuthor);
+router.post('/', protectAdmin, upload.any(), createAuthor);
+router.put('/:id', protectAdmin, upload.any(), updateAuthor);
 router.delete('/:id', protectAdmin, deleteAuthor);
 
 export default router;

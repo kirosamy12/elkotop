@@ -11,8 +11,8 @@ router.get('/', getAllCategories);
 router.get('/:id', getCategoryById);
 
 // Admin only routes
-router.post('/', protectAdmin, upload.none(), createCategory);
-router.put('/:id', protectAdmin, upload.none(), updateCategory);
+router.post('/', protectAdmin, upload.any(), createCategory);
+router.put('/:id', protectAdmin, upload.any(), updateCategory);
 router.delete('/:id', protectAdmin, deleteCategory);
 
 export default router;

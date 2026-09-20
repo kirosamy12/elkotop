@@ -7,8 +7,8 @@ const router = express.Router();
 const upload = multer();
 
 router.get('/profile', protect, getProfile);
-router.put('/profile', protect, upload.none(), updateProfile);
-router.put('/avatar', protect, upload.none(), uploadAvatar);
+router.put('/profile', protect, upload.any(), updateProfile);
+router.put('/avatar', protect, upload.any(), uploadAvatar);
 
 // Admin only routes
 router.get('/all', protect, authorize('admin'), getAllUsers);
