@@ -37,21 +37,25 @@ model Admin {
 }
 
 model Category {
-  id        Int      @id @default(autoincrement())
-  title     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  books     Book[]
+  id         Int         @id @default(autoincrement())
+  title      String      @unique
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  books      Book[]
+  audioBooks AudioBook[]
+  videos     Video[]
 }
 
 model Author {
-  id        Int      @id @default(autoincrement())
-  name      String
-  bio       String?
-  image     String   @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  books     Book[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  bio             String?
+  image           String           @default("")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  books           Book[]
+  audioBooks      AudioBook[]
+  videos          Video[]
   favoriteAuthors FavoriteAuthor[]
 }
 
@@ -91,6 +95,62 @@ model FavoriteAuthor {
   author    Author   @relation(fields: [authorId], references: [id])
 
   @@unique([userId, authorId])
+}
+
+model AudioBook {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  coverImage  String
+  audioUrl    String
+  duration    String?
+  releaseDate DateTime
+  categoryId  Int
+  authorId    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id])
+  author      Author   @relation(fields: [authorId], references: [id])
+}
+
+model Video {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  coverImage  String
+  videoUrl    String
+  duration    String?
+  releaseDate DateTime
+  categoryId  Int
+  authorId    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id])
+  author      Author   @relation(fields: [authorId], references: [id])
+}
+
+model Ad {
+  id        Int      @id @default(autoincrement())
+  title     String
+  image     String
+  link      String?
+  slot      AdSlot
+  isActive  Boolean  @default(true)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum AdSlot {
+  HOME_BANNER
+  HOME_MIDDLE
+  BOOKS_TOP
+  BOOKS_BOTTOM
+  AUDIOBOOKS_TOP
+  VIDEOS_TOP
+  SIDEBAR
+  POPUP
 }
 
 enum Role {

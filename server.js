@@ -10,6 +10,9 @@ import adminRoutes from './modules/admin/admin.routes.js';
 import categoryRoutes from './modules/category/category.routes.js';
 import authorRoutes from './modules/author/author.routes.js';
 import bookRoutes from './modules/book/book.routes.js';
+import audioBookRoutes from './modules/audiobook/audiobook.routes.js';
+import videoRoutes from './modules/video/video.routes.js';
+import adRoutes from './modules/ad/ad.routes.js';
 import favoriteRoutes from './modules/favorite/favorite.routes.js';
 
 dotenv.config();
@@ -32,6 +35,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/authors', authorRoutes);
 app.use('/api/books', bookRoutes);
+app.use('/api/audiobooks', audioBookRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/ads', adRoutes);
 app.use('/api/favorites', favoriteRoutes);
  
 // Home route
